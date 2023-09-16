@@ -83,6 +83,10 @@ def process_train_event(evt: dict):
    # log the accuracy of the new model for persistence
    audit_log(f"Model was (re)trained and achieved an accuracy of {accuracy}", accuracy=accuracy)
 
+   # push the training metrics to datavillage
+   client = Client()
+   client.push_metrics({"accuracy":accuracy})
+
 def process_predict_event(evt: dict):
    """
    Make prediction using the previously train model on the test dataset 
