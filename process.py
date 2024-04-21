@@ -96,9 +96,16 @@ def process_train_event(evt: dict):
     X_undersampled_train, X_undersampled_test, Y_undersampled_train, Y_undersampled_test = train_test_split(X_undersampled, Y_undersampled, test_size = 0.30)
     xg_undersampled = xgb.XGBClassifier() 
     xg_undersampled.fit(X_undersampled_train, Y_undersampled_train)
-    xg_undersampled.save_model('model.json')
+    
+    # save the model to the results location
+    xg_undersampled.save_model('/resources/outputs/model.json')
+
     cmat, pred = RunModel(xg_undersampled, X_undersampled_train, Y_undersampled_train, X_undersampled_test, Y_undersampled_test)
-    print(accuracy_score(Y_undersampled_test, pred))
+    accuracy =accuracy_score(Y_undersampled_test, pred)
+    
+    # push the training metrics to datavillage
+    client = Client()
+    client.push_metrics({"accuracy":accuracy})
 
 def RunModel(model, X_train, y_train, X_test, y_test):
     model.fit(X_train, y_train.values.ravel())
@@ -106,5 +113,5 @@ def RunModel(model, X_train, y_train, X_test, y_test):
     matrix = confusion_matrix(y_test, pred)
     return matrix, pred
 
-if __name__ == "__main__":
-    process_train_event(None)
+#if __name__ == "__main__":
+ #   process_train_event(None)
