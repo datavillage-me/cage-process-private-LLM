@@ -14,11 +14,16 @@ import time
 import requests
 import os
 import pandas as pd
-from dv_utils import default_settings, Client, audit_log 
-from xgboost import XGBClassifier
-from sklearn.datasets import load_iris
+from dv_utils import default_settings, Client 
+import xgboost as xgb
+import matplotlib.pyplot as plt
+import sklearn
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_auc_score, roc_curve
+import numpy as np
+import seaborn as sns
+import duckdb
+
 
 logger = logging.getLogger(__name__)
 
@@ -41,119 +46,65 @@ def event_processor(evt: dict):
     evt_type =evt.get("type", "")
     if(evt_type == "TRAIN"):
         process_train_event(evt)
-    elif(evt_type == "PREDICT"):
-        process_predict_event(evt)
-    elif(evt_type == "INFER"):
-        process_infer_event(evt)     
-    else:
-        generic_event_processor(evt)
 
 
 def generic_event_processor(evt: dict):
     # push an audit log to reccord for an event that is not understood
-    audit_log("received an unhandled event", evt=evt_type)
+    #audit_log("received an unhandled event", evt=evt_type)
+    print ("TO DO")
 
 
 def process_train_event(evt: dict):
-   """
-   Train an XGBoost Classifier model using the logic given in 
-   """
+    """
+    Train an XGBoost Classifier model using the logic given in 
+     """
 
-   # load the training data from scikit learn library
-   # we could also have loaded the data from an external API or from a local file (uploaded in the data  collaboration)
-   data = load_iris()
-
-   # split the data in train and test samples
-   X_train, X_test, y_train, y_test = train_test_split(data['data'], data['target'], test_size=.2)
-
-   # create model instance
-   bst = XGBClassifier(n_estimators=2, max_depth=2, learning_rate=1, objective='binary:logistic')
-
-   # fit model using only training data
-   bst.fit(X_train, y_train)
-
-   # save the model to the results location
-   bst.save_model('/resources/outputs/model.json')
+    # load the training data from data folder
+    # we could also have loaded the data from an external API or from a local file (uploaded in the data  collaboration)
+    
+    df = duckdb.sql("SELECT Time,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23,V24,V25,V26,V27,V28,Amount,Class FROM read_parquet('./data/transactions.parquet') as transactions  JOIN read_csv(['./data/label-bank1.csv','./data/label-bank2.csv']) as labels ON (labels.UETR = transactions.UETR)").df()
+    
+    #feature_names = df.iloc[:, 1:30].columns
+    #target = df.iloc[:1, 30:].columns
 
 
-   # make predictions on test dataset and verify accuracy
-   preds = bst.predict(X_test)
-   accuracy = accuracy_score(y_test, preds)
- 
-   # log the accuracy of the new model for persistence
-   audit_log(f"Model was (re)trained and achieved an accuracy of {accuracy}", accuracy=accuracy)
+    #data_features = df[feature_names]
+    #data_target = df[target]
 
-   # push the training metrics to datavillage
-   client = Client()
-   client.push_metrics({"accuracy":accuracy})
+    #np.random.seed(123)
+    #X_train, X_test, y_train, y_test = train_test_split(data_features, data_target,train_size = 0.70, test_size = 0.30, random_state = 1)
+    #xg = xgb.XGBClassifier()
+    #xg.fit(X_train, y_train)
 
-def process_predict_event(evt: dict):
-   """
-   Make prediction using the previously train model on the test dataset 
-   """
+    #xg.save_model('model.json')
 
-   # load the training data from scikit learn library
-   # we could also have loaded the data from an external API or from a local file (uploaded in the data  collaboration)
-   data = load_iris()
+    #cmat, pred = RunModel(xg, X_train, y_train, X_test, y_test)
+    #print(accuracy_score(y_test, pred))
 
-   # split the data in train and test samples
-   X_train, X_test, y_train, y_test = train_test_split(data['data'], data['target'], test_size=.2)
+    # The function "len" counts the number of classes = 1 and saves it as an object "fraud_records"
+    fraud_records = len(df[df.Class == 1]) 
 
-   # create model instance
-   bst = XGBClassifier()
+    # Defines the index for fraud and non-fraud in the lines:
+    fraud_indices = df[df.Class == 1].index
+    normal_indices = df[df.Class == 0].index
 
-   # load a previously saved model from TRAIN step from the /resources/outputs directory 
-   # we could also have load a model from the /resources/inputs/ directory that would have been uploaded from a Data Provider of the collaboration
-   bst.load_model('/resources/outputs/model.json')
-   
-   # make predictions
-   preds = bst.predict(X_test)
+    # Randomly collect equal samples of each type:
+    under_sample_indices = np.random.choice(normal_indices, fraud_records, False)
+    df_undersampled = df.iloc[np.concatenate([fraud_indices, under_sample_indices]),:]
+    X_undersampled = df_undersampled.iloc[:,1:30]
+    Y_undersampled = df_undersampled.Class
+    X_undersampled_train, X_undersampled_test, Y_undersampled_train, Y_undersampled_test = train_test_split(X_undersampled, Y_undersampled, test_size = 0.30)
+    xg_undersampled = xgb.XGBClassifier() 
+    xg_undersampled.fit(X_undersampled_train, Y_undersampled_train)
+    xg_undersampled.save_model('model.json')
+    cmat, pred = RunModel(xg_undersampled, X_undersampled_train, Y_undersampled_train, X_undersampled_test, Y_undersampled_test)
+    print(accuracy_score(Y_undersampled_test, pred))
 
-   # save prediction and truth in a dataframe
-   df = pd.DataFrame(X_test, columns=data["feature_names"])
-   df["pred"] = preds
-   df["pred"] = df["pred"].map(lambda x:data["target_names"][x])
-   df["truth"] = y_test
-   df["truth"] = df["truth"].map(lambda x:data["target_names"][x])
-  
-   # store predictions to excel
-   df.to_excel("/resources/outputs/batch_predictions.xlsx")
+def RunModel(model, X_train, y_train, X_test, y_test):
+    model.fit(X_train, y_train.values.ravel())
+    pred = model.predict(X_test)
+    matrix = confusion_matrix(y_test, pred)
+    return matrix, pred
 
-
-def process_infer_event(evt: dict):
-
-   # list features
-   features = [
-     'sepal length (cm)',
-     'sepal width (cm)',
-     'petal length (cm)',
-     'petal width (cm)'
-   ]
-
-   target_names = ['setosa', 'versicolor', 'virginica']
-
-
-   # retrieve feature data from event
-   data = evt.get("data",None)
-   X = []
-   for feature in features:
-      if not feature in data:
-          raise Exception(f"received an inference event without '{feature}' feature")
-      X += [data[feature]]
-
-   # create model instance
-   bst = XGBClassifier()
-
-   # load previously saved model
-   bst.load_model('/resources/outputs/model.json')
-
-   # make a model inference for the given features
-   pred = bst.predict([X])[0]
-
-   # get prediction name
-   pred_name = target_names[pred]
-
-   # log the inference result
-   # another approach would be to push it through an API endpoint or to save it to file
-   logger.info(f"Infering {pred_name} for data {data}")
-
+if __name__ == "__main__":
+    process_train_event(None)

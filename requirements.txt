@@ -3,6 +3,9 @@
 dv-utils>=0.2.2
 pandas
 openpyxl
-delta_sharing @ git+https://github.com/delta-io/delta-sharing@main#&subdirectory=python
 xgboost
-scikit-learn
+sklearn
+numpy
+matplotlib
+seaborn
+duckdb
