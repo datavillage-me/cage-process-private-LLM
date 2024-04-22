@@ -15,8 +15,9 @@ import json
 
 import duckdb
 
-import pandas as pd
 from dv_utils import default_settings, Client 
+
+import pandas as pd
 import xgboost as xgb
 import matplotlib.pyplot as plt
 import sklearn
@@ -26,6 +27,9 @@ import numpy as np
 import seaborn as sns
 
 logger = logging.getLogger(__name__)
+
+input_dir = "/resources/data"
+output_dir = "/resources/outputs"
 
 # let the log go to stdout, as it will be captured by the cage operator
 logging.basicConfig(
@@ -105,26 +109,34 @@ def process_infer_event(evt: dict):
     """
     Infer prediction using the previously train model on the data from the event
     """
-
     features = ['V1','V2','V3','V4','V5','V6','V7','V8','V9','V10','V11','V12','V13','V14','V15','V16','V17','V18','V19','V20','V21','V22','V23','V24','V25','V26','V27','V28','Amount']
 
-    # retrieve feature data from event
-    data = evt.get("data",None)
-    X = []
-    for feature in features:
-        if not feature in data:
-            raise Exception(f"received an inference event without '{feature}' feature")
-        X += [data[feature]]
+    evt_uetr =evt.get("UETR", "")
+
+     # load the training data from data providers
+    # duckDB is used to load the data and aggregated them in one single datasets
+    logger.info(f"Load data from data provider")
+    df = duckdb.sql("SELECT UETR,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23,V24,V25,V26,V27,V28,Amount FROM read_parquet('https://github.com/datavillage-me/cage-process-fraud-detection-example/raw/main/data/transactions.parquet') WHERE UETR='"+evt_uetr+"'").df()
+    
     # create model instance
     bst = xgb.XGBClassifier()
 
-     # load previously saved model
-    bst.load_model('/resources/outputs/model.json')
+    # load model from AI model provider
+    logger.info(f"Load AI model from model provider")
+    bst.load_model('model.json')
 
-    # make a model inference for the given features
-    pred = bst.predict([X])[0]
-
-    print (pred)
+    for index, row in df.iterrows():
+        X = []
+        for feature in features:
+            if not feature in row:
+                raise Exception(f"received an inference event without '{feature}' feature")
+            X += [row[feature]]
+        # make a model inference for the given features
+        pred = bst.predict([X])[0]
+        
+        logger.info(f"Save fraud score as output of the collaboration")
+        with open('/resources/outputs/fraud-score.json', 'w', newline='') as file:
+            file.write('{"UETR": "'+row["UETR"]+'","class": "'+str(pred)+'"}")
 
 
 
@@ -137,38 +149,6 @@ def RunModel(model, X_train, y_train, X_test, y_test):
 if __name__ == "__main__":
     test_event = {
             'type': 'INFER',
-            'data': 
-        {
-    "V1": 1.23742903021294,
-    "V2": -0.93765432109876,
-    "V3": 0.54218765432109,
-    "V4": -1.23568765432109,
-    "V5": 0.76543210987654,
-    "V6": -0.98765432109876,
-    "V7": 1.12345678901234,
-    "V8": -0.78901234567890,
-    "V9": 1.54321098765432,
-    "V10": -1.23456789012345,
-    "V11": 0.87654321098765,
-    "V12": -0.65432109876543,
-    "V13": 1.09876543210987,
-    "V14": -0.43210987654321,
-    "V15": 0.21098765432109,
-    "V16": -0.34567890123456,
-    "V17": 0.12345678901234,
-    "V18": -0.56789012345678,
-    "V19": 0.78901234567890,
-    "V20": -0.98765432109876,
-    "V21": 0.65432109876543,
-    "V22": -0.32109876543210,
-    "V23": 0.09876543210987,
-    "V24": -0.45678901234567,
-    "V25": 0.23456789012345,
-    "V26": -0.54321098765432,
-    "V27": 0.87654321098765,
-    "V28": -0.12345678901234,
-    "Amount": 149.62
-         }  
-    
+            'UETR': 'e3993bef-811f-4906-9241-4aee985e41df'
     }
     process_infer_event(test_event)
