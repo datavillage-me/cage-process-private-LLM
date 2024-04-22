@@ -125,6 +125,8 @@ def process_infer_event(evt: dict):
     logger.info(f"Load AI model from model provider")
     bst.load_model(os.path.dirname(__file__) + '/resources/data/model.json')
 
+    logger.info(f"AI model loaded")
+
     for index, row in df.iterrows():
         X = []
         for feature in features:
