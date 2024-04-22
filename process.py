@@ -123,7 +123,8 @@ def process_infer_event(evt: dict):
 
     # load model from AI model provider
     logger.info(f"Load AI model from model provider")
-    bst.load_model('model.json')
+    script_dir = os.path.dirname(__file__)
+    bst.load_model(os.path.join(script_dir, 'model.json'))
 
     for index, row in df.iterrows():
         X = []
@@ -132,6 +133,8 @@ def process_infer_event(evt: dict):
                 raise Exception(f"received an inference event without '{feature}' feature")
             X += [row[feature]]
         # make a model inference for the given features
+
+        logger.info(f"Predict fraud score")
         pred = bst.predict([X])[0]
         
         logger.info(f"Save fraud score as output of the collaboration")
