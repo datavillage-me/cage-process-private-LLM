@@ -1,10 +1,8 @@
 """
-This code demonstrate how to train a ML model and use it later for inference in the datavillage collaboration paradigm
-The code we follow is the main example of the XGBoost ML library
-https://xgboost.readthedocs.io/en/stable/get_started.html
-
-The case is simple and very comon in machine learning 101
-So you can really focus on how this example is modified to work in datavillage collaboration context
+This code demonstrate how to train a XGBoost Logistic Regression model for credit card fraud detection
+The code use datasets from 3 parties
+- 2 banks providing the labels (class) for each transactions being fraudulent or not
+- A financial data intermediary or payment processor providing the transactions data on which Dimensionality Reduction Techniques for Data Privacy has been applied.
 
 """
 
@@ -14,6 +12,9 @@ import time
 import requests
 import os
 import json
+
+import duckdb
+
 import pandas as pd
 from dv_utils import default_settings, Client 
 import xgboost as xgb
@@ -23,8 +24,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_auc_score, roc_curve
 import numpy as np
 import seaborn as sns
-import duckdb
-
 
 logger = logging.getLogger(__name__)
 
@@ -47,42 +46,27 @@ def event_processor(evt: dict):
     evt_type =evt.get("type", "")
     if(evt_type == "TRAIN"):
         process_train_event(evt)
+    elif(evt_type == "INFER"):
+        process_infer_event(evt)
+    else:
+        generic_event_processor(evt)
 
 
 def generic_event_processor(evt: dict):
     # push an audit log to reccord for an event that is not understood
-    #audit_log("received an unhandled event", evt=evt_type)
-    print ("TO DO")
-
+    logger.info(f"Received an unhandled event {evt}")
 
 def process_train_event(evt: dict):
     """
     Train an XGBoost Classifier model using the logic given in 
      """
 
-    # load the training data from data folder
-    # we could also have loaded the data from an external API or from a local file (uploaded in the data  collaboration)
+    # load the training data from data providers
+    # duckDB is used to load the data and aggregated them in one single datasets
     logger.info(f"Load data from data providers")
     df = duckdb.sql("SELECT Time,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23,V24,V25,V26,V27,V28,Amount,Class FROM read_parquet('https://github.com/datavillage-me/cage-process-fraud-detection-example/raw/main/data/transactions.parquet') as transactions  JOIN read_csv(['https://github.com/datavillage-me/cage-process-fraud-detection-example/raw/main/data/label-bank1.csv','https://github.com/datavillage-me/cage-process-fraud-detection-example/raw/main/data/label-bank2.csv']) as labels ON (labels.UETR = transactions.UETR)").df()
     
-    #feature_names = df.iloc[:, 1:30].columns
-    #target = df.iloc[:1, 30:].columns
-
-
-    #data_features = df[feature_names]
-    #data_target = df[target]
-
-    #np.random.seed(123)
-    #X_train, X_test, y_train, y_test = train_test_split(data_features, data_target,train_size = 0.70, test_size = 0.30, random_state = 1)
-    #xg = xgb.XGBClassifier()
-    #xg.fit(X_train, y_train)
-
-    #xg.save_model('model.json')
-
-    #cmat, pred = RunModel(xg, X_train, y_train, X_test, y_test)
-    #print(accuracy_score(y_test, pred))
-
-    # The function "len" counts the number of classes = 1 and saves it as an object "fraud_records"
+    # Defines number of fraud recors
     fraud_records = len(df[df.Class == 1]) 
 
     # Defines the index for fraud and non-fraud in the lines:
@@ -104,11 +88,11 @@ def process_train_event(evt: dict):
     accuracy =accuracy_score(Y_undersampled_test, pred)
     classificationReportJson=classification_report(Y_undersampled_test, pred,output_dict=True)
 
-    logger.info(f"Save model")
+    logger.info(f"Save model as output of the collaboration")
     # save the model to the results location
     xg_undersampled.save_model('/resources/outputs/model.json')
     
-    logger.info(f"Save model classification report")
+    logger.info(f"Save model classification report as output of the collaboration")
     with open('/resources/outputs/classification-report.json', 'w', newline='') as file:
        file.write(json.dumps(classificationReportJson))
     
@@ -117,6 +101,33 @@ def process_train_event(evt: dict):
     client = Client()
     client.push_metrics({"accuracy":accuracy})
 
+def process_infer_event(evt: dict):
+    """
+    Infer prediction using the previously train model on the data from the event
+    """
+
+    features = ['V1','V2','V3','V4','V5','V6','V7','V8','V9','V10','V11','V12','V13','V14','V15','V16','V17','V18','V19','V20','V21','V22','V23','V24','V25','V26','V27','V28','Amount']
+
+    # retrieve feature data from event
+    data = evt.get("data",None)
+    X = []
+    for feature in features:
+        if not feature in data:
+            raise Exception(f"received an inference event without '{feature}' feature")
+        X += [data[feature]]
+    # create model instance
+    bst = xgb.XGBClassifier()
+
+     # load previously saved model
+    bst.load_model('/resources/outputs/model.json')
+
+    # make a model inference for the given features
+    pred = bst.predict([X])[0]
+
+    print (pred)
+
+
+
 def RunModel(model, X_train, y_train, X_test, y_test):
     model.fit(X_train, y_train.values.ravel())
     pred = model.predict(X_test)
@@ -124,4 +135,40 @@ def RunModel(model, X_train, y_train, X_test, y_test):
     return matrix, pred
 
 if __name__ == "__main__":
-    process_train_event(None)
+    test_event = {
+            'type': 'INFER',
+            'data': 
+        {
+    "V1": 1.23742903021294,
+    "V2": -0.93765432109876,
+    "V3": 0.54218765432109,
+    "V4": -1.23568765432109,
+    "V5": 0.76543210987654,
+    "V6": -0.98765432109876,
+    "V7": 1.12345678901234,
+    "V8": -0.78901234567890,
+    "V9": 1.54321098765432,
+    "V10": -1.23456789012345,
+    "V11": 0.87654321098765,
+    "V12": -0.65432109876543,
+    "V13": 1.09876543210987,
+    "V14": -0.43210987654321,
+    "V15": 0.21098765432109,
+    "V16": -0.34567890123456,
+    "V17": 0.12345678901234,
+    "V18": -0.56789012345678,
+    "V19": 0.78901234567890,
+    "V20": -0.98765432109876,
+    "V21": 0.65432109876543,
+    "V22": -0.32109876543210,
+    "V23": 0.09876543210987,
+    "V24": -0.45678901234567,
+    "V25": 0.23456789012345,
+    "V26": -0.54321098765432,
+    "V27": 0.87654321098765,
+    "V28": -0.12345678901234,
+    "Amount": 149.62
+         }  
+    
+    }
+    process_infer_event(test_event)
