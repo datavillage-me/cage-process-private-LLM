@@ -123,7 +123,7 @@ def process_infer_event(evt: dict):
 
     # load model from AI model provider
     logger.info(f"Load AI model from model provider")
-    bst.load_model('/resources/data/model.json'))
+    bst.load_model('model.json'))
 
     for index, row in df.iterrows():
         X = []
