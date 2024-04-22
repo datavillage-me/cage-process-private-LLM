@@ -136,7 +136,7 @@ def process_infer_event(evt: dict):
         
         logger.info(f"Save fraud score as output of the collaboration")
         with open('/resources/outputs/fraud-score.json', 'w', newline='') as file:
-            file.write('{"UETR": "'+row["UETR"]+'","class": "'+str(pred)+'"}")
+            file.write('{"UETR": "'+row['UETR']+'","class": "'+str(pred)+'"}')
 
 
 
