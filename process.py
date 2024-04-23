@@ -65,71 +65,95 @@ def process_train_event(evt: dict):
     Train an XGBoost Classifier model using the logic given in 
      """
 
+    logger.info(f"--------------------------------------------------")
+    logger.info(f"|               START MODEL TRAINING             |")
+    logger.info(f"|                                                |")
     # load the training data from data providers
     # duckDB is used to load the data and aggregated them in one single datasets
-    logger.info(f"Load data from data providers")
+    logger.info(f"| 1. Load data from data providers               |")
+    logger.info(f"|    https://github.com/.../transactions.parquet |")
+    logger.info(f"|    https://github.com/.../label-bank1.csv      |")
+    logger.info(f"|    https://github.com/.../label-bank2.csv      |")
     df = duckdb.sql("SELECT Time,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23,V24,V25,V26,V27,V28,Amount,Class FROM read_parquet('https://github.com/datavillage-me/cage-process-fraud-detection-example/raw/main/data/transactions.parquet') as transactions  JOIN read_csv(['https://github.com/datavillage-me/cage-process-fraud-detection-example/raw/main/data/label-bank1.csv','https://github.com/datavillage-me/cage-process-fraud-detection-example/raw/main/data/label-bank2.csv']) as labels ON (labels.UETR = transactions.UETR)").df()
     
     # Defines number of fraud recors
     fraud_records = len(df[df.Class == 1]) 
 
+    logger.info(f"|    Number of records:  {len(df)}                  |")
+
     # Defines the index for fraud and non-fraud in the lines:
     fraud_indices = df[df.Class == 1].index
     normal_indices = df[df.Class == 0].index
-
+    logger.info(f"|                                                |")
+    logger.info(f"| 2. Create Logistic Regression model            |")
+    logger.info(f"|    Randomly collect equal samples of each type |")
+    
     # Randomly collect equal samples of each type:
     under_sample_indices = np.random.choice(normal_indices, fraud_records, False)
     df_undersampled = df.iloc[np.concatenate([fraud_indices, under_sample_indices]),:]
     X_undersampled = df_undersampled.iloc[:,1:30]
     Y_undersampled = df_undersampled.Class
     X_undersampled_train, X_undersampled_test, Y_undersampled_train, Y_undersampled_test = train_test_split(X_undersampled, Y_undersampled, test_size = 0.30)
-    logger.info(f"Create XGBClassifier model")
+    
+    logger.info(f"|    Create XGBClassifier model                  |")
     xg_undersampled = xgb.XGBClassifier() 
     xg_undersampled.fit(X_undersampled_train, Y_undersampled_train)
 
-    logger.info(f"Run model")
+    logger.info(f"|    Run model                                   |")
     cmat, pred = RunModel(xg_undersampled, X_undersampled_train, Y_undersampled_train, X_undersampled_test, Y_undersampled_test)
     accuracy =accuracy_score(Y_undersampled_test, pred)
     classificationReportJson=classification_report(Y_undersampled_test, pred,output_dict=True)
 
-    logger.info(f"Save model as output of the collaboration")
+    logger.info(f"|                                                |")
+    logger.info(f"| 3. Save outputs of the collaboration           |")
+    logger.info(f"|    Save created model                          |")
+    logger.info(f"|    Save model classification report            |")
     # save the model to the results location
     xg_undersampled.save_model('/resources/outputs/model.json')
     
-    logger.info(f"Save model classification report as output of the collaboration")
     with open('/resources/outputs/classification-report.json', 'w', newline='') as file:
        file.write(json.dumps(classificationReportJson))
-    
-    logger.info(f"Log accuracy")
-    # push the training metrics to datavillage
-    client = Client()
-    client.push_metrics({"accuracy":accuracy})
+
+    logger.info(f"|                                                |")
+    logger.info(f"--------------------------------------------------")
+   
 
 def process_infer_event(evt: dict):
     """
     Infer prediction using the previously train model on the data from the event
     """
+    logger.info(f"--------------------------------------------------")
+    logger.info(f"|               START MODEL INFERENCE            |")
+    logger.info(f"|                                                |")
+
     features = ['V1','V2','V3','V4','V5','V6','V7','V8','V9','V10','V11','V12','V13','V14','V15','V16','V17','V18','V19','V20','V21','V22','V23','V24','V25','V26','V27','V28','Amount']
 
     evt_uetr =evt.get("UETR", "")
 
      # load the training data from data providers
     # duckDB is used to load the data and aggregated them in one single datasets
-    logger.info(f"Load data from data provider")
+    logger.info(f"| 1. Load data from data providers               |")
+    logger.info(f"|    https://github.com/.../transactions.parquet |")
     df = duckdb.sql("SELECT UETR,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23,V24,V25,V26,V27,V28,Amount FROM read_parquet('https://github.com/datavillage-me/cage-process-fraud-detection-example/raw/main/data/transactions.parquet') WHERE UETR='"+evt_uetr+"'").df()
-    
+    logger.info(f"|    Data loaded                                 |")
     # create model instance
     bst = xgb.XGBClassifier()
 
     # load model from AI model provider
-    logger.info(f"Load AI model from model provider")
+    logger.info(f"|                                                |")
+    logger.info(f"| 2. Load AI model from model provider           |")
+    logger.info(f"|    https://github.com/.../model.json           |")
+
+
     
     # Find the directory in which the current script resides:
     file_dir = os.path.dirname(os.path.realpath(__file__))
 
     bst.load_model("/resources/data/model.json")
 
-    logger.info(f"AI model loaded")
+    logger.info(f"|    AI model loaded                             |")
+    logger.info(f"|                                                |")
+    logger.info(f"| 3. Predict fraud score                         |")
 
     for index, row in df.iterrows():
         X = []
@@ -139,13 +163,17 @@ def process_infer_event(evt: dict):
             X += [row[feature]]
         # make a model inference for the given features
 
-        logger.info(f"Predict fraud score")
         pred = bst.predict([X])[0]
+        logger.info(f"|    Prediction done                             |")
         
-        logger.info(f"Save fraud score as output of the collaboration")
+        logger.info(f"|                                                |")
+        logger.info(f"| 4. Save outputs of the collaboration           |")
+
         with open('/resources/outputs/fraud-score.json', 'w', newline='') as file:
             file.write('{"UETR": "'+row['UETR']+'","class": "'+str(pred)+'"}')
-
+        logger.info(f"| 3. Save fraud-score                            |")
+        logger.info(f"|                                                |")
+        logger.info(f"--------------------------------------------------")
 
 
 def RunModel(model, X_train, y_train, X_test, y_test):
