@@ -123,7 +123,9 @@ def process_infer_event(evt: dict):
 
     # load model from AI model provider
     logger.info(f"Load AI model from model provider")
-    bst.load_model(os.path.dirname(__file__) + '/resources/data/model.json')
+    url = "https://github.com/datavillage-me/cage-process-fraud-detection-example/raw/main/model.json"
+
+    bst.load_model("model.json")
 
     logger.info(f"AI model loaded")
 
@@ -153,6 +155,6 @@ def RunModel(model, X_train, y_train, X_test, y_test):
 if __name__ == "__main__":
     test_event = {
             'type': 'INFER',
-            'UETR': 'e3993bef-811f-4906-9241-4aee985e41df'
+            'UETR': 'a1d960fa-c233-43d6-aaf4-ac99b04c41fc'
     }
     process_infer_event(test_event)
