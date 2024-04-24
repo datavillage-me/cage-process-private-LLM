@@ -8,4 +8,4 @@ scikit-learn
 numpy
 matplotlib
 seaborn
-duckdb
+duckdb==0.10.1
