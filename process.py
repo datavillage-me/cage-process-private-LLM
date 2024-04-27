@@ -64,10 +64,10 @@ def process_benchmark_event(evt: dict):
     logger.info(f"| 1. Load data from data providers               |")
     logger.info(f"|    https://github.com/./beneficiaries1.parquet |")
     logger.info(f"|    https://github.com/./beneficiaries2.parquet |")
-    dataProvider1URL="data/beneficiaries1.parquet"
-    dataProvider2URL="data/beneficiaries2.parquet"
-    dataProvider3URL="data/beneficiaries3.parquet"
-    dataProvider4URL="data/beneficiaries4.parquet"
+    dataProvider1URL="https://github.com/datavillage-me/cage-process-white-list-beneficiaries-benchmarking-example/raw/main/data/beneficiaries1.parquet"
+    dataProvider2URL="https://github.com/datavillage-me/cage-process-white-list-beneficiaries-benchmarking-example/raw/main/data/beneficiaries2.parquet"
+    dataProvider3URL="https://github.com/datavillage-me/cage-process-white-list-beneficiaries-benchmarking-example/raw/main/data/beneficiaries3.parquet"
+    dataProvider4URL="https://github.com/datavillage-me/cage-process-white-list-beneficiaries-benchmarking-example/raw/main/data/beneficiaries4.parquet"
     start_time = time.time()
     logger.info(f"|    Start time:  {start_time} secs |")
     #df = duckdb.sql("SELECT beneficiaries1.AIR_TIME FROM read_parquet('"+dataProvider1URL+"') as beneficiaries1 WHERE beneficiaries1.AIR_TIME IN (SELECT AIR_TIME from read_parquet('"+dataProvider2URL+"') UNION SELECT AIR_TIME from read_parquet('"+dataProvider3URL+"') UNION SELECT AIR_TIME from read_parquet('"+dataProvider4URL+"'))").df()
