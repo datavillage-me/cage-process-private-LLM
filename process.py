@@ -68,8 +68,8 @@ def process_benchmark_event(evt: dict):
     dataProvider2URL="data/beneficiaries2.parquet"
     dataProvider3URL="data/beneficiaries3.parquet"
     dataProvider4URL="data/beneficiaries4.parquet"
-
     start_time = time.time()
+    logger.info(f"|    Start time:  {start_time} secs |")
     #df = duckdb.sql("SELECT beneficiaries1.AIR_TIME FROM read_parquet('"+dataProvider1URL+"') as beneficiaries1 WHERE beneficiaries1.AIR_TIME IN (SELECT AIR_TIME from read_parquet('"+dataProvider2URL+"') UNION SELECT AIR_TIME from read_parquet('"+dataProvider3URL+"') UNION SELECT AIR_TIME from read_parquet('"+dataProvider4URL+"'))").df()
     df = duckdb.sql("SELECT FL_DATE from read_parquet('"+dataProvider2URL+"') UNION ALL SELECT FL_DATE from read_parquet('"+dataProvider3URL+"') UNION ALL SELECT FL_DATE from read_parquet('"+dataProvider4URL+"') UNION ALL SELECT FL_DATE from read_parquet('"+dataProvider1URL+"')")
     #df = duckdb.sql("DESCRIBE TABLE '"+dataProvider2URL+"'") 
