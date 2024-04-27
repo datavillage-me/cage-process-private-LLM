@@ -72,7 +72,7 @@ def process_benchmark_event(evt: dict):
     start_time = time.time()
     #df = duckdb.sql("SELECT beneficiaries1.AIR_TIME FROM read_parquet('"+dataProvider1URL+"') as beneficiaries1 WHERE beneficiaries1.AIR_TIME IN (SELECT AIR_TIME from read_parquet('"+dataProvider2URL+"') UNION SELECT AIR_TIME from read_parquet('"+dataProvider3URL+"') UNION SELECT AIR_TIME from read_parquet('"+dataProvider4URL+"'))").df()
     df = duckdb.sql("SELECT FL_DATE from read_parquet('"+dataProvider2URL+"') UNION ALL SELECT FL_DATE from read_parquet('"+dataProvider3URL+"') UNION ALL SELECT FL_DATE from read_parquet('"+dataProvider4URL+"') UNION ALL SELECT FL_DATE from read_parquet('"+dataProvider1URL+"')")
-    #df = duckdb.sql("DESCRIBE TABLE '"+dataProvider2URL+"'")  
+    #df = duckdb.sql("DESCRIBE TABLE '"+dataProvider2URL+"'") 
     #print(df)
 
     execution_time=(time.time() - start_time)
@@ -81,7 +81,7 @@ def process_benchmark_event(evt: dict):
 
     logger.info(f"| 4. Save outputs of the collaboration           |")
 
-    with open('data/benchmark-report.json', 'w', newline='') as file:
+    with open('/resources/outputs/benchmark-report.json', 'w', newline='') as file:
         file.write('{"Similar": "3230000","new": "628"}')
     logger.info(f"| 3. Save benchmark-report                       |")
     logger.info(f"|                                                |")
