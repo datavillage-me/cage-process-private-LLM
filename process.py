@@ -64,14 +64,17 @@ def process_benchmark_event(evt: dict):
     logger.info(f"| 1. Load data from data providers               |")
     logger.info(f"|    https://github.com/./beneficiaries1.parquet |")
     logger.info(f"|    https://github.com/./beneficiaries2.parquet |")
-    dataProvider1URL="https://github.com/datavillage-me/cage-process-white-list-beneficiaries-benchmarking-example/raw/main/data/beneficiaries1.parquet"
-    dataProvider2URL="https://github.com/datavillage-me/cage-process-white-list-beneficiaries-benchmarking-example/raw/main/data/beneficiaries2.parquet"
-    dataProvider3URL="https://github.com/datavillage-me/cage-process-white-list-beneficiaries-benchmarking-example/raw/main/data/beneficiaries3.parquet"
-    dataProvider4URL="https://github.com/datavillage-me/cage-process-white-list-beneficiaries-benchmarking-example/raw/main/data/beneficiaries4.parquet"
+    dataProvider1URL="https://github.com/datavillage-me/cage-process-white-list-beneficiaries-benchmarking-example/raw/main/data/beneficiaries-encrypted1.parquet"
+    dataProvider2URL="https://github.com/datavillage-me/cage-process-white-list-beneficiaries-benchmarking-example/raw/main/data/beneficiaries-encrypted2.parquet"
+    dataProvider3URL="https://github.com/datavillage-me/cage-process-white-list-beneficiaries-benchmarking-example/raw/main/data/beneficiaries-encrypted3.parquet"
+    dataProvider4URL="https://github.com/datavillage-me/cage-process-white-list-beneficiaries-benchmarking-example/raw/main/data/beneficiaries-encrypted4.parquet"
+    
+    DATA_ENCRYPTION_KEY = os.environ.get("DATA_ENCRYPTION_KEY", "")
+    res=duckdb.sql("PRAGMA add_parquet_key('key256', '"+DATA_ENCRYPTION_KEY+"')")
     start_time = time.time()
     logger.info(f"|    Start time:  {start_time} secs |")
     #df = duckdb.sql("SELECT beneficiaries1.AIR_TIME FROM read_parquet('"+dataProvider1URL+"') as beneficiaries1 WHERE beneficiaries1.AIR_TIME IN (SELECT AIR_TIME from read_parquet('"+dataProvider2URL+"') UNION SELECT AIR_TIME from read_parquet('"+dataProvider3URL+"') UNION SELECT AIR_TIME from read_parquet('"+dataProvider4URL+"'))").df()
-    df = duckdb.sql("SELECT FL_DATE from read_parquet('"+dataProvider2URL+"') UNION ALL SELECT FL_DATE from read_parquet('"+dataProvider3URL+"') UNION ALL SELECT FL_DATE from read_parquet('"+dataProvider4URL+"') UNION ALL SELECT FL_DATE from read_parquet('"+dataProvider1URL+"')")
+    df = duckdb.sql("SELECT FL_DATE from read_parquet('"+dataProvider2URL+"', encryption_config = {footer_key: 'key256'}) UNION ALL SELECT FL_DATE from read_parquet('"+dataProvider3URL+"', encryption_config = {footer_key: 'key256'}) UNION ALL SELECT FL_DATE from read_parquet('"+dataProvider4URL+"', encryption_config = {footer_key: 'key256'}) UNION ALL SELECT FL_DATE from read_parquet('"+dataProvider1URL+"', encryption_config = {footer_key: 'key256'})")
     #df = duckdb.sql("DESCRIBE TABLE '"+dataProvider2URL+"'") 
     #print(df)
 
