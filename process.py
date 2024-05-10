@@ -95,6 +95,12 @@ def process_benchmark_event(evt: dict):
 
 if __name__ == "__main__":
     test_event = {
-            'type': 'BENCHMARK'
+            'type': 'QUERY',
+            'parameter': {
+                'education_level': 'high_school',
+                'employment_status': 'unemployed',
+                'problem':'Hoge bloeddruk',
+                'medication':'Medrol'
+            }
     }
     process_benchmark_event(test_event)
