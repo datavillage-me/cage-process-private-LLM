@@ -1,7 +1,7 @@
 {
-    "patients": [
+    "citizens": [
       {
-        "patient_id": "73072267399",
+        "national_id": "73072267399",
         "age": 45,
         "gender": "male",
         "location": "Antwerp",
@@ -10,7 +10,7 @@
         "employment_status": "employed"
       },
       {
-        "patient_id": "85110551849",
+        "national_id": "85110551849",
         "age": 32,
         "gender": "female",
         "location": "Ghent",
@@ -19,7 +19,7 @@
         "employment_status": "unemployed"
       },
       {
-        "patient_id": "82050738457",
+        "national_id": "82050738457",
         "age": 55,
         "gender": "male",
         "location": "Leuven",
@@ -28,7 +28,7 @@
         "employment_status": "retired"
       },
       {
-        "patient_id": "96070647222",
+        "national_id": "96070647222",
         "age": 38,
         "gender": "female",
         "location": "Bruges",
@@ -37,7 +37,7 @@
         "employment_status": "employed"
       },
       {
-        "patient_id": "91020528466",
+        "national_id": "91020528466",
         "age": 27,
         "gender": "male",
         "location": "Mechelen",
@@ -46,7 +46,7 @@
         "employment_status": "student"
       },
       {
-        "patient_id": "84092761530",
+        "national_id": "84092761530",
         "age": 50,
         "gender": "female",
         "location": "Antwerp",
@@ -55,7 +55,7 @@
         "employment_status": "employed"
       },
       {
-        "patient_id": "75061558184",
+        "national_id": "75061558184",
         "age": 42,
         "gender": "male",
         "location": "Ghent",
@@ -64,7 +64,7 @@
         "employment_status": "employed"
       },
       {
-        "patient_id": "67072841592",
+        "national_id": "67072841592",
         "age": 60,
         "gender": "female",
         "location": "Leuven",
@@ -73,7 +73,7 @@
         "employment_status": "employed"
       },
       {
-        "patient_id": "82031232758",
+        "national_id": "82031232758",
         "age": 35,
         "gender": "male",
         "location": "Bruges",
@@ -82,7 +82,7 @@
         "employment_status": "unemployed"
       },
       {
-        "patient_id": "93051822361",
+        "national_id": "93051822361",
         "age": 48,
         "gender": "female",
         "location": "Mechelen",

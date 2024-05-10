@@ -41,8 +41,8 @@ def event_processor(evt: dict):
 
     # dispatch events according to their type
     evt_type =evt.get("type", "")
-    if(evt_type == "BENCHMARK"):
-        process_benchmark_event(evt)
+    if(evt_type == "QUERY"):
+        process_query_event(evt)
     else:
         generic_event_processor(evt)
 
@@ -51,7 +51,7 @@ def generic_event_processor(evt: dict):
     # push an audit log to reccord for an event that is not understood
     logger.info(f"Received an unhandled event {evt}")
 
-def process_benchmark_event(evt: dict):
+def process_query_event(evt: dict):
     """
     Train an XGBoost Classifier model using the logic given in 
      """
@@ -62,21 +62,16 @@ def process_benchmark_event(evt: dict):
     # load the training data from data providers
     # duckDB is used to load the data and aggregated them in one single datasets
     logger.info(f"| 1. Load data from data providers               |")
-    logger.info(f"|    https://github.com/./beneficiaries1.parquet |")
-    logger.info(f"|    https://github.com/./beneficiaries2.parquet |")
-    dataProvider1URL="https://github.com/datavillage-me/cage-process-white-list-beneficiaries-benchmarking-example/raw/main/data/beneficiaries-encrypted1.parquet"
-    dataProvider2URL="https://github.com/datavillage-me/cage-process-white-list-beneficiaries-benchmarking-example/raw/main/data/beneficiaries-encrypted2.parquet"
-    dataProvider3URL="https://github.com/datavillage-me/cage-process-white-list-beneficiaries-benchmarking-example/raw/main/data/beneficiaries-encrypted3.parquet"
-    dataProvider4URL="https://github.com/datavillage-me/cage-process-white-list-beneficiaries-benchmarking-example/raw/main/data/beneficiaries-encrypted4.parquet"
-    
-    DATA_ENCRYPTION_KEY = os.environ.get("DATA_ENCRYPTION_KEY", "")
-    res=duckdb.sql("PRAGMA add_parquet_key('key256', '"+DATA_ENCRYPTION_KEY+"')")
+    logger.info(f"|    https://github.com/./demographic.json |")
+    logger.info(f"|    https://github.com/./patients.json |")
+    dataProvider1URL="https://github.com/datavillage-me/cage-process-clinical-trial-patient-cohort-selection/raw/main/data/demographic.json"
+    dataProvider2URL="https://github.com/datavillage-me/cage-process-clinical-trial-patient-cohort-selection/raw/main/data/patients.json"
     start_time = time.time()
     logger.info(f"|    Start time:  {start_time} secs |")
     #df = duckdb.sql("SELECT beneficiaries1.AIR_TIME FROM read_parquet('"+dataProvider1URL+"') as beneficiaries1 WHERE beneficiaries1.AIR_TIME IN (SELECT AIR_TIME from read_parquet('"+dataProvider2URL+"') UNION SELECT AIR_TIME from read_parquet('"+dataProvider3URL+"') UNION SELECT AIR_TIME from read_parquet('"+dataProvider4URL+"'))").df()
-    df = duckdb.sql("SELECT FL_DATE from read_parquet('"+dataProvider2URL+"', encryption_config = {footer_key: 'key256'}) UNION ALL SELECT FL_DATE from read_parquet('"+dataProvider3URL+"', encryption_config = {footer_key: 'key256'}) UNION ALL SELECT FL_DATE from read_parquet('"+dataProvider4URL+"', encryption_config = {footer_key: 'key256'}) UNION ALL SELECT FL_DATE from read_parquet('"+dataProvider1URL+"', encryption_config = {footer_key: 'key256'})")
+    df = duckdb.sql("SELECT citizens from read_json_auto('"+dataProvider1URL+"') as demographic")
     #df = duckdb.sql("DESCRIBE TABLE '"+dataProvider2URL+"'") 
-    #print(df)
+    print(df)
 
     execution_time=(time.time() - start_time)
     logger.info(f"|    Execution time:  {execution_time} secs |")
@@ -84,8 +79,8 @@ def process_benchmark_event(evt: dict):
 
     logger.info(f"| 4. Save outputs of the collaboration           |")
 
-    with open('/resources/outputs/benchmark-report.json', 'w', newline='') as file:
-        file.write('{"Similar": "3230000","new": "628"}')
+   # with open('/resources/outputs/benchmark-report.json', 'w', newline='') as file:
+    #    file.write('{"Similar": "3230000","new": "628"}')
     logger.info(f"| 3. Save benchmark-report                       |")
     logger.info(f"|                                                |")
     logger.info(f"--------------------------------------------------")
@@ -103,4 +98,4 @@ if __name__ == "__main__":
                 'medication':'Medrol'
             }
     }
-    process_benchmark_event(test_event)
+    process_query_event(test_event)
