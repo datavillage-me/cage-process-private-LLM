@@ -114,7 +114,6 @@ def process_query_event(evt: dict):
 
     execution_time=(time.time() - start_time)
     logger.info(f"|    Execution time:  {execution_time} secs |")
-    logger.info(f"|    Number of records:  {len(df)}                |")
 
     logger.info(f"| 4. Save outputs of the collaboration           |")
     # The output file model is stored in the data folder
