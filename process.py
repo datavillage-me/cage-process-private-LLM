@@ -62,26 +62,88 @@ def process_query_event(evt: dict):
     # load the training data from data providers
     # duckDB is used to load the data and aggregated them in one single datasets
     logger.info(f"| 1. Load data from data providers               |")
-    logger.info(f"|    https://github.com/./demographic.json |")
-    logger.info(f"|    https://github.com/./patients.json |")
-    dataProvider1URL="https://github.com/datavillage-me/cage-process-clinical-trial-patient-cohort-selection/raw/main/data/demographic.json"
-    dataProvider2URL="https://github.com/datavillage-me/cage-process-clinical-trial-patient-cohort-selection/raw/main/data/patients.json"
+    logger.info(f"|    https://github.com/./demographic.parquet |")
+    logger.info(f"|    https://github.com/./patients.parquet |")
+    dataProvider1URL="https://github.com/datavillage-me/cage-process-clinical-trial-patient-cohort-selection/raw/main/data/demographic.parquet"
+    #dataProvider1URL="data/demographic.parquet"
+    dataProvider2URL="https://github.com/datavillage-me/cage-process-clinical-trial-patient-cohort-selection/raw/main/data/patients.parquet"
+    #dataProvider2URL="data/patients.parquet"
     start_time = time.time()
     logger.info(f"|    Start time:  {start_time} secs |")
-    #df = duckdb.sql("SELECT beneficiaries1.AIR_TIME FROM read_parquet('"+dataProvider1URL+"') as beneficiaries1 WHERE beneficiaries1.AIR_TIME IN (SELECT AIR_TIME from read_parquet('"+dataProvider2URL+"') UNION SELECT AIR_TIME from read_parquet('"+dataProvider3URL+"') UNION SELECT AIR_TIME from read_parquet('"+dataProvider4URL+"'))").df()
-    df = duckdb.sql("SELECT citizens from read_json_auto('"+dataProvider1URL+"') as demographic")
-    #df = duckdb.sql("DESCRIBE TABLE '"+dataProvider2URL+"'") 
-    print(df)
+    
+    whereClause=evt.get("parameters", "")
+    baseQuery="SELECT COUNT(*) as total from '"+dataProvider1URL+"' as demographic,'"+dataProvider2URL+"' as patients WHERE demographic.national_id=patients.national_id AND "+whereClause
+   
+    #total candidates
+    df = duckdb.sql(baseQuery).df()
+    totalCandidates=df['total'][0]
+    
+    #gender
+    #male
+    df = duckdb.sql(baseQuery+ "AND demographic.gender='male'").df()
+    totalGenderMale=df['total'][0]
+    #female
+    df = duckdb.sql(baseQuery+ "AND demographic.gender='female'").df()
+    totalGenderFemale=df['total'][0]
+
+    #education_level
+    #high_school
+    df = duckdb.sql(baseQuery+ "AND demographic.education_level='high_school'").df()
+    totalEducationLevelHighSchool=df['total'][0]
+    #college
+    df = duckdb.sql(baseQuery+ "AND demographic.education_level='college'").df()
+    totalEducationLevelCollege=df['total'][0]
+    #university
+    df = duckdb.sql(baseQuery+ "AND demographic.education_level='university'").df()
+    totalEducationLevelUniversity=df['total'][0]
+
+
+    #employment_status
+    #unemployed
+    df = duckdb.sql(baseQuery+ "AND demographic.employment_status='unemployed'").df()
+    totalEmploymentStatusUnemployed=df['total'][0]
+    #employed
+    df = duckdb.sql(baseQuery+ "AND demographic.employment_status='employed'").df()
+    totalEmploymentStatusEmployed=df['total'][0]
+    #student
+    df = duckdb.sql(baseQuery+ "AND demographic.employment_status='student'").df()
+    totalEmploymentStatusStudent=df['total'][0]
+    #retired
+    df = duckdb.sql(baseQuery+ "AND demographic.employment_status='retired'").df()
+    totalEmploymentStatusRetired=df['total'][0]
 
     execution_time=(time.time() - start_time)
     logger.info(f"|    Execution time:  {execution_time} secs |")
     logger.info(f"|    Number of records:  {len(df)}                |")
 
     logger.info(f"| 4. Save outputs of the collaboration           |")
+    # The output file model is stored in the data folder
+    
+    output= ''' {
+    "candidates": '''+str(totalCandidates)+''',
+        "gender": {
+        "male":'''+str(totalGenderMale)+''',
+        "female":'''+str(totalGenderFemale)+'''
+        },
+        "education_level": {
+        "high_school":'''+str(totalEducationLevelHighSchool)+''',
+        "college":'''+str(totalEducationLevelCollege)+''',
+        "university":'''+str(totalEducationLevelUniversity)+'''
+        },
+        "employment_status":{
+        "unemployed":'''+str(totalEmploymentStatusUnemployed)+''',
+        "employed":'''+str(totalEmploymentStatusEmployed)+''',
+        "student":'''+str(totalEmploymentStatusStudent)+''',
+        "retired":'''+str(totalEmploymentStatusRetired)+'''
+        }
+    } '''
+
+    with open('data/my.json', 'w', newline='') as file:
+        file.write(output)
 
    # with open('/resources/outputs/benchmark-report.json', 'w', newline='') as file:
     #    file.write('{"Similar": "3230000","new": "628"}')
-    logger.info(f"| 3. Save benchmark-report                       |")
+    logger.info(f"| 3. Save candidate-report                       |")
     logger.info(f"|                                                |")
     logger.info(f"--------------------------------------------------")
     logger.info(f"|                                                |")
@@ -90,12 +152,7 @@ def process_query_event(evt: dict):
 
 if __name__ == "__main__":
     test_event = {
-            'type': 'QUERY',
-            'parameter': {
-                'education_level': 'high_school',
-                'employment_status': 'unemployed',
-                'problem':'Hoge bloeddruk',
-                'medication':'Medrol'
-            }
+            "type": "QUERY",
+            "parameters": "patients.medical_problem='Diabetes'"
     }
     process_query_event(test_event)
