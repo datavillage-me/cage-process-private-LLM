@@ -76,6 +76,7 @@ def process_query_event(evt: dict):
         baseQuery="SELECT COUNT(*) as total from '"+dataProvider1URL+"' as demographic,'"+dataProvider2URL+"' as patients WHERE demographic.national_id=patients.national_id AND "+whereClause
     else:
         baseQuery="SELECT COUNT(*) as total from '"+dataProvider1URL+"' as demographic,'"+dataProvider2URL+"' as patients WHERE demographic.national_id=patients.national_id"
+    
     #total candidates
     df = duckdb.sql(baseQuery).df()
     totalCandidates=df['total'][0]
@@ -83,36 +84,36 @@ def process_query_event(evt: dict):
     
     #gender
     #male
-    df = duckdb.sql(baseQuery+ "AND demographic.gender='male'").df()
+    df = duckdb.sql(baseQuery+ " AND demographic.gender='male'").df()
     totalGenderMale=df['total'][0]
     #female
-    df = duckdb.sql(baseQuery+ "AND demographic.gender='female'").df()
+    df = duckdb.sql(baseQuery+ " AND demographic.gender='female'").df()
     totalGenderFemale=df['total'][0]
 
     #education_level
     #high_school
-    df = duckdb.sql(baseQuery+ "AND demographic.education_level='high_school'").df()
+    df = duckdb.sql(baseQuery+ " AND demographic.education_level='high_school'").df()
     totalEducationLevelHighSchool=df['total'][0]
     #college
-    df = duckdb.sql(baseQuery+ "AND demographic.education_level='college'").df()
+    df = duckdb.sql(baseQuery+ " AND demographic.education_level='college'").df()
     totalEducationLevelCollege=df['total'][0]
     #university
-    df = duckdb.sql(baseQuery+ "AND demographic.education_level='university'").df()
+    df = duckdb.sql(baseQuery+ " AND demographic.education_level='university'").df()
     totalEducationLevelUniversity=df['total'][0]
 
 
     #employment_status
     #unemployed
-    df = duckdb.sql(baseQuery+ "AND demographic.employment_status='unemployed'").df()
+    df = duckdb.sql(baseQuery+ " AND demographic.employment_status='unemployed'").df()
     totalEmploymentStatusUnemployed=df['total'][0]
     #employed
-    df = duckdb.sql(baseQuery+ "AND demographic.employment_status='employed'").df()
+    df = duckdb.sql(baseQuery+ " AND demographic.employment_status='employed'").df()
     totalEmploymentStatusEmployed=df['total'][0]
     #student
-    df = duckdb.sql(baseQuery+ "AND demographic.employment_status='student'").df()
+    df = duckdb.sql(baseQuery+ " AND demographic.employment_status='student'").df()
     totalEmploymentStatusStudent=df['total'][0]
     #retired
-    df = duckdb.sql(baseQuery+ "AND demographic.employment_status='retired'").df()
+    df = duckdb.sql(baseQuery+ " AND demographic.employment_status='retired'").df()
     totalEmploymentStatusRetired=df['total'][0]
 
     execution_time=(time.time() - start_time)
@@ -155,6 +156,6 @@ def process_query_event(evt: dict):
 if __name__ == "__main__":
     test_event = {
             "type": "QUERY",
-            "parameters": "patients.medical_problem='Diabetes'"
+            "parameters": ""
     }
     process_query_event(test_event)
