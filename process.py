@@ -138,11 +138,11 @@ def process_query_event(evt: dict):
         }
     } '''
 
-    with open('data/my.json', 'w', newline='') as file:
-        file.write(output)
+    #with open('data/my.json', 'w', newline='') as file:
+        #file.write(output)
 
-   # with open('/resources/outputs/benchmark-report.json', 'w', newline='') as file:
-    #    file.write('{"Similar": "3230000","new": "628"}')
+    with open('/resources/outputs/candidates-report.json', 'w', newline='') as file:
+        file.write(output)
     logger.info(f"| 3. Save candidate-report                       |")
     logger.info(f"|                                                |")
     logger.info(f"--------------------------------------------------")
