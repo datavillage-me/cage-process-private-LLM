@@ -72,11 +72,14 @@ def process_query_event(evt: dict):
     logger.info(f"|    Start time:  {start_time} secs |")
     
     whereClause=evt.get("parameters", "")
-    baseQuery="SELECT COUNT(*) as total from '"+dataProvider1URL+"' as demographic,'"+dataProvider2URL+"' as patients WHERE demographic.national_id=patients.national_id AND "+whereClause
-   
+    if whereClause!=''
+        baseQuery="SELECT COUNT(*) as total from '"+dataProvider1URL+"' as demographic,'"+dataProvider2URL+"' as patients WHERE demographic.national_id=patients.national_id AND "+whereClause
+    else
+        baseQuery="SELECT COUNT(*) as total from '"+dataProvider1URL+"' as demographic,'"+dataProvider2URL+"' as patients WHERE demographic.national_id=patients.national_id"
     #total candidates
     df = duckdb.sql(baseQuery).df()
     totalCandidates=df['total'][0]
+    print(totalCandidates)
     
     #gender
     #male
