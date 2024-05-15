@@ -119,7 +119,7 @@ def process_query_event(evt: dict):
     execution_time=(time.time() - start_time)
     logger.info(f"|    Execution time:  {execution_time} secs |")
 
-    logger.info(f"| 4. Save outputs of the collaboration           |")
+    logger.info(f"| 2. Save outputs of the collaboration           |")
     # The output file model is stored in the data folder
     
     output= ''' {
@@ -146,9 +146,7 @@ def process_query_event(evt: dict):
 
     with open('/resources/outputs/candidates-report.json', 'w', newline='') as file:
         file.write(output)
-    logger.info(f"| 3. Save candidate-report                       |")
-    logger.info(f"|                                                |")
-    logger.info(f"--------------------------------------------------")
+   
     logger.info(f"|                                                |")
     logger.info(f"--------------------------------------------------")
    
