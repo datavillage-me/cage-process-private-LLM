@@ -5,11 +5,16 @@ import pandas as pd
 
 from duckdb.typing import *
 from faker import Faker
+import hashlib
 
 
 
 def random_ssn(n):
     return str(n).zfill(10)
+
+def user_hash(n):
+    return hashlib.sha256(str.encode(str(n).zfill(10))).hexdigest()
+
 
 def random_age(n):
     return random.randrange(20, 60)
@@ -147,6 +152,7 @@ def random_medical_vaccine(n):
     return data[i]
 
 duckdb.create_function("ssn", random_ssn, [BIGINT], VARCHAR)
+duckdb.create_function("user_hash_from_ssn", user_hash, [BIGINT], VARCHAR)
 duckdb.create_function("age", random_age, [DOUBLE], INTEGER)
 duckdb.create_function("gender", random_gender, [DOUBLE], VARCHAR)
 duckdb.create_function("city", random_city, [DOUBLE], VARCHAR)
@@ -159,9 +165,9 @@ duckdb.create_function("medical_medication", random_medical_medication, [DOUBLE]
 duckdb.create_function("medical_vaccine", random_medical_vaccine, [DOUBLE], VARCHAR)
 
 
-res = duckdb.sql("COPY (SELECT ssn(i) as national_id, age(random()) as age, gender(random()) as gender,city(random()) as location,income_level(random()) as income_level,education_level(random()) as education_level,employment_status(random()) as employment_status FROM generate_series(1, 100000) s(i)) TO 'data/demographic.parquet'  (FORMAT 'parquet')")
+res = duckdb.sql("COPY (SELECT ssn(i) as national_id, user_hash_from_ssn(i) as user_hash, age(random()) as age, gender(random()) as gender,city(random()) as location,income_level(random()) as income_level,education_level(random()) as education_level,employment_status(random()) as employment_status FROM generate_series(1, 100000) s(i)) TO 'data/demographic.parquet'  (FORMAT 'parquet')")
 
-res = duckdb.sql("COPY (SELECT ssn(i) as national_id, medical_problem(random()) as medical_problem,medical_medication(random()) as medical_medication,medical_vaccine(random()) as medical_vaccine FROM generate_series(1, 100000) s(i)) TO 'data/patients.parquet'  (FORMAT 'parquet')")
+res = duckdb.sql("COPY (SELECT ssn(i) as national_id, user_hash_from_ssn(i) as user_hash, medical_problem(random()) as medical_problem,medical_medication(random()) as medical_medication,medical_vaccine(random()) as medical_vaccine FROM generate_series(1, 100000) s(i)) TO 'data/patients.parquet'  (FORMAT 'parquet')")
 
 
 
