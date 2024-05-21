@@ -4,3 +4,8 @@ dv-utils>=0.2.2
 pandas
 openpyxl
 duckdb==0.10.1
+llama-index
+llama-index-embeddings-huggingface 
+llama-index-vector-stores-duckdb
+llama-index-llms-ollama
+llama_index.readers.database
